@@ -1,0 +1,98 @@
+/**
+ * POST /api/process
+ * Accepts a transcript string, runs NLP detection + LLM analysis,
+ * saves the record to MongoDB, and returns structured output.
+ */
+
+const express = require('express');
+const { isFinancialConversation, extractAmountsFromText } = require('../services/nlp');
+const { analyzeConversation } = require('../services/llm');
+const Conversation = require('../models/Conversation');
+
+const router = express.Router();
+
+router.post('/process', async (req, res) => {
+  const { transcript } = req.body;
+
+  if (!transcript || !transcript.trim()) {
+    return res.status(400).json({ detail: 'Transcript cannot be empty.' });
+  }
+
+  const text = transcript.trim();
+
+  try {
+    // Step 1: Keyword-based financial detection
+    const { isFinancial: isFin, confidence: baseConfidence } = isFinancialConversation(text);
+
+    // Step 2: Extract amounts using regex (fast, no API call)
+    const amountsFromRegex = extractAmountsFromText(text);
+
+    // Step 3: LLM Full Analysis
+    const llmResult = await analyzeConversation(text);
+
+    const rawEntities = llmResult.entities || {};
+
+    // Merge regex-found amounts with LLM-found amounts (dedupe, preserve order)
+    const llmAmounts = rawEntities.amounts || [];
+    const mergedAmounts = [...new Set([...llmAmounts, ...amountsFromRegex])];
+
+    const entities = {
+      emi: rawEntities.emi || null,
+      sip: rawEntities.sip || null,
+      loan: rawEntities.loan || null,
+      amounts: mergedAmounts,
+      banks: rawEntities.banks || [],
+      investment_types: rawEntities.investment_types || [],
+      time_periods: rawEntities.time_periods || [],
+    };
+
+    let summary = llmResult.summary || 'No summary available.';
+    let decision = llmResult.decision || 'No decision identified.';
+    let financial_advice = llmResult.financial_advice || null;
+    let risk_level = llmResult.risk_level || 'medium';
+    let sentiment = llmResult.sentiment || 'neutral';
+
+    let isFinancial = isFin;
+    let confidence = baseConfidence;
+    if (entities.amounts.length > 0 || entities.emi || entities.sip || entities.loan || entities.banks.length > 0 || entities.investment_types.length > 0) {
+      isFinancial = true;
+      if (confidence < 0.7) confidence = 0.85;
+    }
+
+    // Normalize
+    if (!['low', 'medium', 'high'].includes(risk_level)) risk_level = 'medium';
+    if (!['positive', 'negative', 'neutral'].includes(sentiment)) sentiment = 'neutral';
+
+    // Step 4: Save to MongoDB
+    const record = new Conversation({
+      timestamp: new Date().toISOString(),
+      transcript: text,
+      is_financial: isFinancial,
+      entities,
+      summary,
+      decision,
+      financial_advice,
+      risk_level,
+      sentiment,
+      confidence_score: confidence,
+    });
+
+    await record.save();
+
+    res.json({
+      is_financial: isFinancial,
+      entities,
+      summary,
+      decision,
+      financial_advice,
+      risk_level,
+      sentiment,
+      confidence_score: confidence,
+    });
+  } catch (err) {
+    console.error('Process error:', err);
+    res.status(502).json({ detail: err.message || 'Analysis failed' });
+  }
+});
+
+module.exports = router;
