@@ -72,8 +72,8 @@ router.post('/register', async (req, res) => {
     const otp = generateOTP();
     global.otpStore[user._id.toString()] = otp;
     
-    // Dispatch real email
-    await sendOtpEmail(email, otp);
+    // Dispatch real email (fire-and-forget, do not await)
+    sendOtpEmail(email, otp).catch(e => console.error("Email error:", e));
 
     const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
     res.status(201).json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
@@ -100,8 +100,8 @@ router.post('/login', async (req, res) => {
     const otp = generateOTP();
     global.otpStore[user._id.toString()] = otp;
     
-    // Dispatch real email
-    await sendOtpEmail(email, otp);
+    // Dispatch real email (fire-and-forget, do not await)
+    sendOtpEmail(email, otp).catch(e => console.error("Email error:", e));
 
     const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
     res.json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
