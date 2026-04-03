@@ -5,6 +5,48 @@ const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'armor_secret_key';
 
+const nodemailer = require('nodemailer');
+
+// In-memory OTP storage for Hackathon simplicity
+global.otpStore = global.otpStore || {};
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Ensure SMTP is configured, defaults to Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+async function sendOtpEmail(email, otp) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn(`\n⚠️ SMTP_USER or SMTP_PASS missing in .env!\nCannot send real email to ${email}. Check your .env file.\nFallback OTP is: ${otp}\n`);
+    return;
+  }
+  
+  await transporter.sendMail({
+    from: '"Armor Security" <noreply@armor.ai>',
+    to: email,
+    subject: "Armor AI - Your 2-Step Login OTP",
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 30px; text-align: center; color: #333;">
+        <h2>Armor AI Two-Step Verification 🔒</h2>
+        <p>We received a request to access your financial dashboard.</p>
+        <p>Your secure One-Time Password is:</p>
+        <h1 style="letter-spacing: 8px; color: #3b82f6; background: #eff6ff; display: inline-block; padding: 15px 30px; border-radius: 12px; margin: 20px 0;">
+          ${otp}
+        </h1>
+        <p style="font-size: 13px; color: #888;">This code will expire in 5 minutes. Do not share it with anyone.</p>
+      </div>
+    `
+  });
+}
+
 // Register
 router.post('/register', async (req, res) => {
   try {
@@ -18,8 +60,14 @@ router.post('/register', async (req, res) => {
     user = new User({ name, email, password });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    const otp = generateOTP();
+    global.otpStore[user._id.toString()] = otp;
+    
+    // Dispatch real email
+    await sendOtpEmail(email, otp);
+
+    const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
+    res.status(201).json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -40,8 +88,14 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    const otp = generateOTP();
+    global.otpStore[user._id.toString()] = otp;
+    
+    // Dispatch real email
+    await sendOtpEmail(email, otp);
+
+    const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
+    res.json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -55,6 +109,32 @@ router.get('/user', auth, async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { tempToken, otp } = req.body;
+    if (!tempToken || !otp) return res.status(400).json({ message: 'Missing token or OTP' });
+
+    const decoded = jwt.verify(tempToken, JWT_SECRET);
+    if (decoded.type !== 'temp') return res.status(400).json({ message: 'Invalid token type' });
+
+    const storedOtp = global.otpStore[decoded.id];
+    if (!storedOtp || storedOtp !== otp) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // OTP matched, delete it and issue permanent token
+    delete global.otpStore[decoded.id];
+    
+    const user = await User.findById(decoded.id);
+    const permanentToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token: permanentToken, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') return res.status(400).json({ message: 'OTP session expired' });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 

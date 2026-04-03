@@ -16,6 +16,17 @@ export async function login(email, password) {
   return data;
 }
 
+export async function verifyOtp(tempToken, otp) {
+  const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tempToken, otp }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'OTP Verification failed');
+  return data;
+}
+
 export async function register(name, email, password) {
   const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: 'POST',

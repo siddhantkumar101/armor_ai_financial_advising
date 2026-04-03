@@ -118,6 +118,9 @@ function AppContent() {
       setStatus({ text: 'Ready', color: null });
       toast('Analysis complete!', 'success');
       loadHistory();
+      
+      // Auto-switch to Dashboard so the visual upgrade is instant
+      setActiveTab('dashboard');
     } catch (err) {
       setLoading(false);
       setStatus({ text: 'Ready', color: null });
@@ -169,7 +172,6 @@ function AppContent() {
                 onClick={() => setActiveTab('dashboard')}
                 className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'}`}
                 style={{ borderRadius: '25px', padding: '10px 24px', transition: 'all 0.3s' }}
-                disabled={!showResults && history.length === 0}
               >
                 📊 Dashboard
               </button>
