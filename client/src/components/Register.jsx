@@ -20,7 +20,11 @@ export default function Register({ onAuthSuccess, onSwitchToLogin }) {
       if (data.requiresOtp) {
         setTempToken(data.tempToken);
         setShowOtp(true);
-        toast('OTP generated! Check your terminal.', 'success');
+        if (data.otpDemoFallback) {
+          toast(`Demo Mode OTP: ${data.otpDemoFallback}`, 'info');
+        } else {
+          toast('OTP sent to your email!', 'success');
+        }
       } else {
         localStorage.setItem('armor_token', data.token);
         localStorage.setItem('armor_user', JSON.stringify(data.user));
@@ -56,7 +60,7 @@ export default function Register({ onAuthSuccess, onSwitchToLogin }) {
       <p className="auth-subtitle">
         {!showOtp 
           ? 'Join Armor Financial AI' 
-          : 'Enter the 6-digit OTP sent to your terminal'}
+          : 'Enter the 6-digit OTP sent to your email'}
       </p>
       
       {!showOtp ? (

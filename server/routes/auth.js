@@ -76,7 +76,7 @@ router.post('/register', async (req, res) => {
     sendOtpEmail(email, otp).catch(e => console.error("Email error:", e));
 
     const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
-    res.status(201).json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
+    res.status(201).json({ requiresOtp: true, tempToken, otpDemoFallback: otp, message: 'OTP sent! (Hackathon Mode)' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -104,7 +104,7 @@ router.post('/login', async (req, res) => {
     sendOtpEmail(email, otp).catch(e => console.error("Email error:", e));
 
     const tempToken = jwt.sign({ id: user._id, type: 'temp' }, JWT_SECRET, { expiresIn: '5m' });
-    res.json({ requiresOtp: true, tempToken, message: 'OTP sent to your email.' });
+    res.json({ requiresOtp: true, tempToken, otpDemoFallback: otp, message: 'OTP sent! (Hackathon Mode)' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

@@ -19,7 +19,11 @@ export default function Login({ onAuthSuccess, onSwitchToRegister }) {
       if (data.requiresOtp) {
         setTempToken(data.tempToken);
         setShowOtp(true);
-        toast('OTP generated! Check your terminal.', 'success');
+        if (data.otpDemoFallback) {
+          toast(`Demo Mode OTP: ${data.otpDemoFallback}`, 'info');
+        } else {
+          toast('OTP sent to your email!', 'success');
+        }
       } else {
         localStorage.setItem('armor_token', data.token);
         localStorage.setItem('armor_user', JSON.stringify(data.user));
@@ -55,7 +59,7 @@ export default function Login({ onAuthSuccess, onSwitchToRegister }) {
       <p className="auth-subtitle">
         {!showOtp 
           ? 'Access your financial intelligence dashboard' 
-          : 'Enter the 6-digit OTP sent to your terminal'}
+          : 'Enter the 6-digit OTP sent to your email'}
       </p>
       
       {!showOtp ? (
