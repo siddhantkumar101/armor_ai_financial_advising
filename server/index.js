@@ -36,16 +36,24 @@ app.get('/health', (req, res) => {
 // ── MongoDB Connection & Server Start ──────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/armor_ai';
 
-mongoose.connect(MONGODB_URI)
+console.log(`🔧 PORT=${PORT}`);
+console.log(`🔧 MONGODB_URI=${MONGODB_URI ? '***set***' : '⚠ MISSING'}`);
+console.log(`🔧 GROQ_API_KEY=${process.env.GROQ_API_KEY ? '***set***' : '⚠ MISSING'}`);
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+})
   .then(() => {
     console.log('✅  Connected to MongoDB');
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✅  Armor backend is live at http://localhost:${PORT}`);
-      console.log(`📖  Health check: http://localhost:${PORT}/health`);
+      console.log(`✅  Armor backend is live at http://0.0.0.0:${PORT}`);
+      console.log(`📖  Health check: /health`);
     });
   })
   .catch((err) => {
     console.error('❌  MongoDB connection failed:', err.message);
+    console.error('Full error:', err);
     process.exit(1);
   });
 
