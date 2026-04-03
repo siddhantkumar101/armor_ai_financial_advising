@@ -25,26 +25,35 @@ const transporter = nodemailer.createTransport({
 
 async function sendOtpEmail(email, otp) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`\n⚠️ SMTP_USER or SMTP_PASS missing in .env!\nCannot send real email to ${email}. Check your .env file.\nFallback OTP is: ${otp}\n`);
+    console.warn('SMTP credentials missing. OTP for ' + email + ' is: ' + otp);
     return;
   }
   
-  await transporter.sendMail({
-    from: '"Armor Security" <noreply@armor.ai>',
-    to: email,
-    subject: "Armor AI - Your 2-Step Login OTP",
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 30px; text-align: center; color: #333;">
-        <h2>Armor AI Two-Step Verification 🔒</h2>
-        <p>We received a request to access your financial dashboard.</p>
-        <p>Your secure One-Time Password is:</p>
-        <h1 style="letter-spacing: 8px; color: #3b82f6; background: #eff6ff; display: inline-block; padding: 15px 30px; border-radius: 12px; margin: 20px 0;">
-          ${otp}
-        </h1>
-        <p style="font-size: 13px; color: #888;">This code will expire in 5 minutes. Do not share it with anyone.</p>
-      </div>
-    `
-  });
+  try {
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 5000));
+    await Promise.race([
+      transporter.sendMail({
+        from: '"Armor Security" <noreply@armor.ai>',
+        to: email,
+        subject: "Armor AI - Your 2-Step Login OTP",
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 30px; text-align: center; color: #333;">
+            <h2>Armor AI Two-Step Verification</h2>
+            <p>We received a request to access your financial dashboard.</p>
+            <p>Your secure One-Time Password is:</p>
+            <h1 style="letter-spacing: 8px; color: #3b82f6; background: #eff6ff; display: inline-block; padding: 15px 30px; border-radius: 12px; margin: 20px 0;">
+              ${otp}
+            </h1>
+            <p style="font-size: 13px; color: #888;">This code will expire in 5 minutes. Do not share it with anyone.</p>
+          </div>
+        `
+      }),
+      timeoutPromise
+    ]);
+    console.log('OTP email sent to ' + email);
+  } catch (err) {
+    console.warn('Email send failed (' + err.message + '). OTP for ' + email + ' is: ' + otp);
+  }
 }
 
 // Register
