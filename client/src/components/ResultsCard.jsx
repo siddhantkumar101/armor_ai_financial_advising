@@ -3,7 +3,7 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export default function ResultsCard({ data }) {
+export default function ResultsCard({ data, onGoToDashboard }) {
   if (!data) return null;
 
   const isFin = data.is_financial !== undefined ? data.is_financial : true;
@@ -106,6 +106,21 @@ export default function ResultsCard({ data }) {
           })}
         </div>
       </div>
+
+      {/* Dashboard Prompt */}
+      {onGoToDashboard && (
+        <div style={{ textAlign: 'center', marginTop: '24px', padding: '16px', background: 'rgba(79, 142, 247, 0.1)', borderRadius: '12px' }}>
+          <p style={{ color: 'var(--text)', marginBottom: '12px' }}>Want to see these insights visualized?</p>
+          <button 
+            onClick={onGoToDashboard} 
+            className="btn btn-primary"
+            style={{ padding: '8px 20px', borderRadius: '20px' }}
+          >
+            📊 Visit Analytics Dashboard
+          </button>
+        </div>
+      )}
+
     </section>
   );
 }

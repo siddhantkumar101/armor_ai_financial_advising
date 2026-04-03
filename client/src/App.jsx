@@ -118,9 +118,6 @@ function AppContent() {
       setStatus({ text: 'Ready', color: null });
       toast('Analysis complete!', 'success');
       loadHistory();
-      
-      // Auto-switch to Dashboard so the visual upgrade is instant
-      setActiveTab('dashboard');
     } catch (err) {
       setLoading(false);
       setStatus({ text: 'Ready', color: null });
@@ -206,7 +203,7 @@ function AppContent() {
 
                 {loading && <Loader text={loaderText} />}
 
-                {showResults && <ResultsCard data={results} />}
+                {showResults && <ResultsCard data={results} onGoToDashboard={() => setActiveTab('dashboard')} />}
               </div>
             )}
 
