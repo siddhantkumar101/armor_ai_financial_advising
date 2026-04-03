@@ -10,9 +10,11 @@ export default function ResultsCard({ data }) {
   const conf = data.confidence_score !== undefined ? data.confidence_score : 0.8;
   const riskLevel = data.risk_level || 'medium';
   const sentiment = data.sentiment || 'neutral';
+  const emotion = data.emotion || 'neutral';
   const entities = data.entities || {};
 
   const chips = [
+    { label: 'Income', value: data.estimated_income, array: false },
     { label: 'EMI', value: entities.emi, array: false },
     { label: 'SIP', value: entities.sip, array: false },
     { label: 'Loan', value: entities.loan, array: false },
@@ -21,6 +23,12 @@ export default function ResultsCard({ data }) {
     { label: 'Investments', value: entities.investment_types, array: true },
     { label: 'Time Periods', value: entities.time_periods, array: true },
   ];
+
+  // Parse financial advice into bullet points
+  const adviceLines = (data.financial_advice || '')
+    .split(/\n|(?=\d+\.\s)/)
+    .map(l => l.replace(/^\d+\.\s*/, '').trim())
+    .filter(l => l.length > 0);
 
   return (
     <section className="card results-card" id="resultsCard">
@@ -35,6 +43,9 @@ export default function ResultsCard({ data }) {
           </span>
           <span className={`badge badge-${sentiment}`}>
             💬 {capitalize(sentiment)}
+          </span>
+          <span className="badge badge-neutral" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc' }}>
+            😊 {capitalize(emotion)}
           </span>
           <span className="badge badge-neutral">
             Confidence: {Math.round(conf * 100)}%
@@ -54,11 +65,17 @@ export default function ResultsCard({ data }) {
         <p>{data.decision || '—'}</p>
       </div>
 
-      {/* Financial Advice */}
-      {data.financial_advice && (
+      {/* Detailed Financial Advice */}
+      {adviceLines.length > 0 && (
         <div className="result-block" style={{ borderColor: 'rgba(6,214,160,0.3)', background: 'rgba(6,214,160,0.05)' }}>
           <h3 style={{ color: 'var(--accent3)' }}>🌱 Armor Insights & Advice</h3>
-          <p>{data.financial_advice}</p>
+          <ul style={{ margin: '12px 0', paddingLeft: '20px', lineHeight: '1.8' }}>
+            {adviceLines.map((line, i) => (
+              <li key={i} style={{ marginBottom: '8px', color: 'var(--text-secondary, #ccc)' }}>
+                {line}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

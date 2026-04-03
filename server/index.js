@@ -12,6 +12,7 @@ const path = require('path');
 const transcribeRouter = require('./routes/transcribe');
 const processRouter = require('./routes/process');
 const historyRouter = require('./routes/history');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api', transcribeRouter);
 app.use('/api', processRouter);
 app.use('/api', historyRouter);
+app.use('/api/auth', authRouter);
 
 // ── Health Check ───────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {

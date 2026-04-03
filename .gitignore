@@ -8,8 +8,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Not ignoring .env as requested by user
-# .env 
+.env
+.env.*
+server/.env 
 
 .vscode/*
 !.vscode/extensions.json

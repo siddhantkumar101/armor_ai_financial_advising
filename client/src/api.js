@@ -1,15 +1,42 @@
-/**
- * API helper – centralized fetch wrapper for all backend calls.
- */
+const API_BASE = 'http://localhost:5002';
 
-const API_BASE = 'http://localhost:5000';  // Direct CORS usage, bypassing Vite proxy
+const getAuthHeader = () => {
+  const token = localStorage.getItem('armor_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
-export async function transcribeFile(file) {
+export async function login(email, password) {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Login failed');
+  return data;
+}
+
+export async function register(name, email, password) {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Registration failed');
+  return data;
+}
+
+export async function transcribeFile(file, language) {
   const formData = new FormData();
   formData.append('file', file);
+  // Map browser speech-recognition lang codes to Whisper codes
+  const langMap = { 'en-IN': 'en', 'en-US': 'en', 'hi-IN': 'hi' };
+  formData.append('language', langMap[language] || 'auto');
 
   const res = await fetch(`${API_BASE}/api/transcribe`, {
     method: 'POST',
+    headers: { ...getAuthHeader() },
     body: formData,
   });
 
@@ -30,7 +57,10 @@ export async function transcribeFile(file) {
 export async function analyzeTranscript(transcript) {
   const res = await fetch(`${API_BASE}/api/process`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
     body: JSON.stringify({ transcript }),
   });
 
@@ -49,7 +79,16 @@ export async function analyzeTranscript(transcript) {
 }
 
 export async function fetchHistory(limit = 15) {
-  const res = await fetch(`${API_BASE}/api/history?limit=${limit}`);
-  if (!res.ok) throw new Error('Failed to fetch history');
+  const res = await fetch(`${API_BASE}/api/history?limit=${limit}`, {
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem('armor_token');
+      localStorage.removeItem('armor_user');
+      window.location.reload();
+    }
+    throw new Error('Failed to fetch history');
+  }
   return res.json();
 }

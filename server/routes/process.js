@@ -6,12 +6,14 @@
 
 const express = require('express');
 const { isFinancialConversation, extractAmountsFromText } = require('../services/nlp');
-const { analyzeConversation } = require('../services/llm');
+const { analyzeConversation, generateAdvancedAdvice } = require('../services/llm');
 const Conversation = require('../models/Conversation');
+
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/process', async (req, res) => {
+router.post('/process', auth, async (req, res) => {
   const { transcript } = req.body;
 
   if (!transcript || !transcript.trim()) {
@@ -48,7 +50,6 @@ router.post('/process', async (req, res) => {
 
     let summary = llmResult.summary || 'No summary available.';
     let decision = llmResult.decision || 'No decision identified.';
-    let financial_advice = llmResult.financial_advice || null;
     let risk_level = llmResult.risk_level || 'medium';
     let sentiment = llmResult.sentiment || 'neutral';
 
@@ -59,12 +60,19 @@ router.post('/process', async (req, res) => {
       if (confidence < 0.7) confidence = 0.85;
     }
 
+    // Step 3.5: If financial, generate highly advanced narrative advice safetly
+    let financial_advice = llmResult.financial_advice || null;
+    if (isFinancial) {
+       financial_advice = await generateAdvancedAdvice(text, entities);
+    }
+
     // Normalize
     if (!['low', 'medium', 'high'].includes(risk_level)) risk_level = 'medium';
     if (!['positive', 'negative', 'neutral'].includes(sentiment)) sentiment = 'neutral';
 
     // Step 4: Save to MongoDB
     const record = new Conversation({
+      userId: req.user.id,
       timestamp: new Date().toISOString(),
       transcript: text,
       is_financial: isFinancial,
@@ -86,7 +94,11 @@ router.post('/process', async (req, res) => {
       decision,
       financial_advice,
       risk_level,
+      risk_score: llmResult.risk_score || null,
+      risk_explanation: llmResult.risk_explanation || null,
+      estimated_income: llmResult.estimated_income || null,
       sentiment,
+      emotion: llmResult.emotion || 'neutral',
       confidence_score: confidence,
     });
   } catch (err) {

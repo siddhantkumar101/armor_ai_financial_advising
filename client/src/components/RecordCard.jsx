@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from './Toast';
 
-export default function RecordCard({ onTranscript, onFileUpload, onStatusChange }) {
+export default function RecordCard({ onTranscript, onFileUpload, onStatusChange, onRecordingChange, onLanguageChange }) {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState('00:00');
   const [lang, setLang] = useState('en-IN');
+
+  const handleLangChange = (e) => {
+    const newLang = e.target.value;
+    setLang(newLang);
+    onLanguageChange?.(newLang);
+  };
   
   const mediaRecorderRef = useRef(null);
   const speechRecognitionRef = useRef(null);
@@ -90,6 +96,7 @@ export default function RecordCard({ onTranscript, onFileUpload, onStatusChange 
 
       mediaRecorder.onstart = () => {
         setIsRecording(true);
+        onRecordingChange?.(true);
         startTimer();
         onStatusChange?.({ text: 'Recording + Live Transcribing…', color: '#f43f5e' });
       };
@@ -102,6 +109,7 @@ export default function RecordCard({ onTranscript, onFileUpload, onStatusChange 
 
       mediaRecorder.onstop = () => {
         setIsRecording(false);
+        onRecordingChange?.(false);
         stopTimer();
         onStatusChange?.({ text: 'Ready', color: null });
         
@@ -173,10 +181,10 @@ export default function RecordCard({ onTranscript, onFileUpload, onStatusChange 
         <div className={`timer ${isRecording ? 'active' : ''}`}>{timer}</div>
 
         <div className="lang-selector">
-          <label>Language:</label>
-          <select value={lang} onChange={(e) => setLang(e.target.value)}>
-            <option value="en-IN">English (India/Hinglish)</option>
-            <option value="hi-IN">Hindi (India)</option>
+          <label>Language Option:</label>
+          <select value={lang} onChange={handleLangChange}>
+            <option value="en-IN">🌐 Dynamic (Hindi + English) - Auto Detect</option>
+            <option value="hi-IN">Hindi (Pure)</option>
             <option value="en-US">English (US)</option>
           </select>
         </div>

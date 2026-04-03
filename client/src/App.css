@@ -379,6 +379,60 @@ body {
   flex-wrap: wrap;
   margin-bottom: 8px;
 }
+.history-sentiment {
+  font-size: 14px;
+}
+
+/* ── Tab Menu ──────────────────────────────────────────────────────────── */
+.tab-menu {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  padding: 8px;
+  border-radius: 40px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab-menu .btn {
+  border-radius: 30px !important;
+  padding: 10px 24px !important;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.tab-menu .btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 142, 247, 0.4);
+}
+
+.tab-menu .btn-outline {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.tab-menu .btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.tab-content.fade-in {
+  animation: fadeInTab 0.4s ease-out forwards;
+}
+
+@keyframes fadeInTab {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .history-time { font-size: 11px; color: var(--text-muted); }
 .history-transcript { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 .history-summary { font-size: 13px; margin-top: 6px; }

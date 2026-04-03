@@ -6,13 +6,15 @@
 const express = require('express');
 const Conversation = require('../models/Conversation');
 
+const auth = require('../middleware/auth');
+
 const router = express.Router();
 
-router.get('/history', async (req, res) => {
+router.get('/history', auth, async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
 
   try {
-    const conversations = await Conversation.find()
+    const conversations = await Conversation.find({ userId: req.user.id })
       .sort({ _id: -1 })
       .limit(limit)
       .lean();

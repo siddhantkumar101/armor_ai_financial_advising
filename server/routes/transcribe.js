@@ -45,15 +45,18 @@ const upload = multer({
   },
 });
 
-router.post('/transcribe', upload.single('file'), async (req, res) => {
+const auth = require('../middleware/auth');
+
+router.post('/transcribe', auth, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ detail: 'No file uploaded.' });
   }
 
   const filePath = req.file.path;
+  const language = req.body.language || 'auto'; // 'en', 'hi', or 'auto'
 
   try {
-    const result = await transcribeAudio(filePath);
+    const result = await transcribeAudio(filePath, language);
     res.json({
       transcript: result.transcript,
       language_detected: result.language_detected,
