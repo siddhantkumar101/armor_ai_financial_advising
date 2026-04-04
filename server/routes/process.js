@@ -59,6 +59,21 @@ router.post('/process', auth, async (req, res) => {
       isFinancial = true;
       if (confidence < 0.7) confidence = 0.85;
     }
+    
+    // Robust numeric sanitization to prevent Mongoose ValidationErrors
+    const sanitizeNum = (val) => {
+      if (val === null || val === undefined || val === '') return null;
+      if (typeof val === 'number') return val;
+      const numStr = String(val).replace(/[^0-9.]/g, '');
+      const parsed = parseFloat(numStr);
+      return isNaN(parsed) ? null : parsed;
+    };
+    
+    entities.emi = sanitizeNum(entities.emi);
+    entities.sip = sanitizeNum(entities.sip);
+    entities.loan = sanitizeNum(entities.loan);
+    const safeIncome = sanitizeNum(llmResult.estimated_income);
+    const safeRiskScore = sanitizeNum(llmResult.risk_score);
 
     // Step 3.5: If financial, generate highly advanced narrative advice safetly
     let financial_advice = llmResult.financial_advice || null;
@@ -81,7 +96,11 @@ router.post('/process', auth, async (req, res) => {
       decision,
       financial_advice,
       risk_level,
+      risk_score: safeRiskScore,
+      risk_explanation: llmResult.risk_explanation || null,
+      estimated_income: safeIncome,
       sentiment,
+      emotion: llmResult.emotion || 'neutral',
       confidence_score: confidence,
     });
 
@@ -94,9 +113,9 @@ router.post('/process', auth, async (req, res) => {
       decision,
       financial_advice,
       risk_level,
-      risk_score: llmResult.risk_score || null,
+      risk_score: safeRiskScore,
       risk_explanation: llmResult.risk_explanation || null,
-      estimated_income: llmResult.estimated_income || null,
+      estimated_income: safeIncome,
       sentiment,
       emotion: llmResult.emotion || 'neutral',
       confidence_score: confidence,

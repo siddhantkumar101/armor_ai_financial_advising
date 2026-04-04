@@ -53,6 +53,22 @@ const conversationSchema = new mongoose.Schema({
     max: 1,
     default: 0.0,
   },
+  estimated_income: {
+    type: Number,
+    default: null,
+  },
+  risk_score: {
+    type: Number,
+    default: null,
+  },
+  risk_explanation: {
+    type: String,
+    default: null,
+  },
+  emotion: {
+    type: String,
+    default: 'neutral',
+  },
 }, {
   timestamps: true,
 });
