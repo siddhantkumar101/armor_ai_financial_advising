@@ -220,7 +220,9 @@ function AppContent() {
                     <InsightCards data={{
                       income: (results || history[0]).estimated_income,
                       emi: (results || history[0]).entities?.emi,
-                      sip: (results || history[0]).entities?.sip
+                      sip: (results || history[0]).entities?.sip,
+                      banks: (results || history[0]).entities?.banks || [],
+                      amounts: (results || history[0]).entities?.amounts || [],
                     }} />
 
                     <div className="dashboard-grid">

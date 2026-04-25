@@ -3,6 +3,15 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function fmtCurrency(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') {
+    return val > 0 ? `₹${val.toLocaleString('en-IN')}` : null;
+  }
+  // Already a formatted string (e.g. "₹15,000")
+  return String(val);
+}
+
 export default function ResultsCard({ data, onGoToDashboard }) {
   if (!data) return null;
 
@@ -14,10 +23,10 @@ export default function ResultsCard({ data, onGoToDashboard }) {
   const entities = data.entities || {};
 
   const chips = [
-    { label: 'Income', value: data.estimated_income, array: false },
-    { label: 'EMI', value: entities.emi, array: false },
-    { label: 'SIP', value: entities.sip, array: false },
-    { label: 'Loan', value: entities.loan, array: false },
+    { label: 'Income', value: fmtCurrency(data.estimated_income), array: false },
+    { label: 'EMI', value: fmtCurrency(entities.emi), array: false },
+    { label: 'SIP', value: fmtCurrency(entities.sip), array: false },
+    { label: 'Loan', value: fmtCurrency(entities.loan), array: false },
     { label: 'Amounts', value: entities.amounts, array: true },
     { label: 'Banks', value: entities.banks, array: true },
     { label: 'Investments', value: entities.investment_types, array: true },
